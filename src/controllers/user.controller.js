@@ -4,6 +4,8 @@ import { v4 as uuid } from 'uuid'
 import bcrypt from 'bcrypt'
 import uploadProfileImage from '../utils/uploadProfileImage'
 import generateToken from '../utils/generateToken'
+import jwt from 'jsonwebtoken'
+import { config } from '../utils/config'
 
 export const login = async (req, res) => {
     const { user, password } = req.body
@@ -138,6 +140,59 @@ export const register = async (req, res) => {
         res.status(500).json({
             error: true,
             message: 'Ha ocurrido un error'
+        })
+    }
+}
+
+export const refreshToken = async (req, res) => {
+    try {
+        // Validamos el token
+        let token = req.headers?.authorization
+
+        if (!token) {
+            throw new Error('No existe el token')
+        } else if (!token.startsWith('Bearer ')) {
+            throw new Error('Formato de token invalido')
+        }
+
+        token = token.replace('Bearer', '').trim()
+        // Validamos que el token este en la lista blanca y habilitado
+        const [ tokenFound ] = await getConn().query('SELECT * FROM `whiteList` WHERE `refresh_token` = ?;', [token])
+
+        if (tokenFound.length === 0 || tokenFound[0].refresh_token !== token) {
+            throw new Error('Token no registrado')
+        } else if (tokenFound[0].enabled !== 1) {
+            throw new Error('Token deshabilitado')
+        }
+
+        // Validamos el token
+        const { userId } = jwt.verify(token, config.jwt.refreshToken)
+
+        if (tokenFound[0].user_id !== userId) {
+            throw new Error('El token no coincide')
+        }
+
+        const [ userFound ] = await getConn().query('SELECT `id` FROM `users` WHERE `id` = ?;', [userId])
+
+        if (userFound.length === 0 || userFound[0].id !== userId) {
+            throw new Error('El usuario no existe')
+        }
+
+        // Eliminamos el token
+        await getConn().query('DELETE FROM `whiteList` WHERE `id` = ?;', [tokenFound[0].id])
+
+        // Generamos el nuevo token
+        const data = await generateToken(userId)
+
+        res.header('Authorization', `Bearer ${data.accessToken}`).json({
+            error: false,
+            data
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(401).json({
+            error: true,
+            message: 'Acceso denegado'
         })
     }
 }
