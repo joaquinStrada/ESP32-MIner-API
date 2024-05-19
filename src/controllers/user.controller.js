@@ -1,12 +1,61 @@
-import { schemaRegister } from '../joi/user.joi'
+import { schemaLogin, schemaRegister } from '../joi/user.joi'
 import { getConn } from '../utils/database'
 import { v4 as uuid } from 'uuid'
 import bcrypt from 'bcrypt'
 import uploadProfileImage from '../utils/uploadProfileImage'
 import generateToken from '../utils/generateToken'
 
-export const login = (req, res) => {
-    res.json('oh yeah!!!')
+export const login = async (req, res) => {
+    const { user, password } = req.body
+    
+    // Validamos los campos
+    const { error } = schemaLogin.validate({
+        user,
+        password
+    })
+
+    if (error) {
+        return res.status(400).json({
+            error: true,
+            message: error.details[0].message
+        })
+    }
+
+    try {
+        // Verificamos que el usuario exista
+        const [ userFound ] = await getConn().query('SELECT `id`, `password` FROM `users` WHERE `user` = ? OR `email` = ?;', [user, user])
+        
+        if (userFound.length === 0) {
+            return res.status(401).json({
+                error: true,
+                message: 'Usuario y/o contraseña incorrectos'
+            })
+        }
+
+        // Verificamos la contraseña
+        const validPass = await bcrypt.compare(password, userFound[0].password)
+
+        if (!validPass) {
+            return res.status(401).json({
+                error: true,
+                message: 'Usuario y/o contraseña incorrectos'
+            })
+        }
+
+        // Generamos el token
+        const data = await generateToken(userFound[0].id)
+
+        res.header('Authorization', `Bearer ${data.accessToken}`).json({
+            error: false,
+            data
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha occurrido un error'
+        })
+    }
 }
 
 export const register = async (req, res) => {
