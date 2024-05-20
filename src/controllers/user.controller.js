@@ -1,4 +1,4 @@
-import { schemaLogin, schemaRegister } from '../joi/user.joi'
+import { schemaEditUser, schemaLogin, schemaRegister } from '../joi/user.joi'
 import { getConn } from '../utils/database'
 import { v4 as uuid } from 'uuid'
 import bcrypt from 'bcrypt'
@@ -6,6 +6,7 @@ import uploadProfileImage from '../utils/uploadProfileImage'
 import generateToken from '../utils/generateToken'
 import jwt from 'jsonwebtoken'
 import { config } from '../utils/config'
+import e from 'cors'
 
 export const login = async (req, res) => {
     const { user, password } = req.body
@@ -223,6 +224,93 @@ export const getUser = async (req, res) => {
                 imageBig: image_big,
                 mqttUser: mqttUser[0].username,
                 mqttPassword: mqttUser[0].password_hash
+            }
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
+}
+
+export const editUser = async (req, res) => {
+    const { fullname, email, user, password } = req.body
+
+    // Validamos los campos
+    const { error } = schemaEditUser.validate({
+        fullname,
+        email,
+        user,
+        password
+    })
+
+    if (error) {
+        return res.status(400).json({
+            error: true,
+            message: error.details[0].message
+        })
+    }
+
+    try {
+        // Validamos que otro usuario no se haya registrado con ese mismo email y/o usuario
+        const [ emailOrUserValid ] = await getConn().query('SELECT `id`, `email`, `user` FROM `users` WHERE `email` = ? OR `user` = ?;', [email, user])
+
+        const validEmail = emailOrUserValid.filter(userFound => userFound.email === email && userFound.id !== req.user.id)
+        const validUser = emailOrUserValid.filter(userFound => userFound.user === user && userFound.id !== req.user.id)
+
+        if (validEmail.length > 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'Email ya registrado'
+            })
+        } else if (validUser.length > 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'Usuario ya registrado'
+            })
+        }
+
+        // Actualizamos el usuario
+        const editUser = {
+            fullname,
+            email,
+            user
+        }
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10)
+            const passHash = await bcrypt.hash(password, salt)
+
+            editUser.password = passHash
+        }
+
+        await getConn().query('UPDATE `users` SET ? WHERE id = ?', [editUser, req.user.id])
+
+        // Actualizamos la foto de perfil en caso de que nos la manden
+        if (req.files && req.files.image) {
+            const uploadImage = await uploadProfileImage(req.files.image, req.user.id)
+
+            if (uploadImage.error) {
+                return res.status(400).json(uploadImage)
+            }
+        }
+
+        // Devolvemos el usuario actualizado
+        const [ userFound ] = await getConn().query('SELECT `users`.`created_at`, `users`.`fullname`, `users`.`email`, `users`.`user`, `users`.`image_small`, `users`.`image_big`, `mqtt_user`.`username`, `mqtt_user`.`password_hash` FROM `users`, `mqtt_user` WHERE `mqtt_user`.`id` = `users`.`id_user_mqtt` AND `users`.`id` = ?;', [req.user.id])
+
+        res.json({
+            error: false,
+            data: {
+                created_at: userFound[0].created_at,
+                fullname: userFound[0].fullname,
+                email: userFound[0].email,
+                user: userFound[0].user,
+                imageSmall: userFound[0].image_small,
+                imageBig: userFound[0].image_big,
+                mqttUser: userFound[0].username,
+                mqttPassword: userFound[0].password_hash
             }
         })
     } catch (err) {
