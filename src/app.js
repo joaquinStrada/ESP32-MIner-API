@@ -4,6 +4,8 @@ import morgan from 'morgan'
 
 // Importing Routes
 import userRoutes from './routes/user.routes'
+import validateToken from './middelwares/validateToken.middelware'
+import validateProfile from './middelwares/validateProfile.middelware'
 
 const app = express()
 
@@ -15,5 +17,8 @@ app.use(express.urlencoded({ extended: false }))
 
 // Routes
 app.use('/api/v1/user', userRoutes)
+
+// Static routes
+app.use('/users/profiles/', validateToken, validateProfile, express.static(config.imageProfile.storeImages))
 
 export default app
