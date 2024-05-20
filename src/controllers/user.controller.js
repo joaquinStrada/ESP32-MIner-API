@@ -146,7 +146,7 @@ export const register = async (req, res) => {
 
 export const refreshToken = async (req, res) => {
     try {
-        // Validamos el token
+        // Validamos que nos hayan enviado el token
         let token = req.headers?.authorization
 
         if (!token) {
@@ -156,6 +156,7 @@ export const refreshToken = async (req, res) => {
         }
 
         token = token.replace('Bearer', '').trim()
+
         // Validamos que el token este en la lista blanca y habilitado
         const [ tokenFound ] = await getConn().query('SELECT * FROM `whiteList` WHERE `refresh_token` = ?;', [token])
 
@@ -172,6 +173,7 @@ export const refreshToken = async (req, res) => {
             throw new Error('El token no coincide')
         }
 
+        // Validamos el usuario
         const [ userFound ] = await getConn().query('SELECT `id` FROM `users` WHERE `id` = ?;', [userId])
 
         if (userFound.length === 0 || userFound[0].id !== userId) {
@@ -193,6 +195,41 @@ export const refreshToken = async (req, res) => {
         res.status(401).json({
             error: true,
             message: 'Acceso denegado'
+        })
+    }
+}
+
+export const getUser = async (req, res) => {
+    const { created_at, fullname, email, user, image_small, image_big, id_user_mqtt } = req.user
+
+    try {
+        const [ mqttUser ] = await getConn().query('SELECT `username`, `password_hash` FROM `mqtt_user` WHERE `id` = ?;', [id_user_mqtt])
+
+        if (mqttUser.length == 0) {
+            res.status(500).json({
+                error: true,
+                message: 'El usuario mqtt no existe'
+            })
+        }
+
+        res.json({
+            error: false,
+            data: {
+                created_at,
+                fullname,
+                email,
+                user,
+                imageSmall: image_small,
+                imageBig: image_big,
+                mqttUser: mqttUser[0].username,
+                mqttPassword: mqttUser[0].password_hash
+            }
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
         })
     }
 }
