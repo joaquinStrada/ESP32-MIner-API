@@ -286,7 +286,7 @@ export const editUser = async (req, res) => {
             editUser.password = passHash
         }
 
-        await getConn().query('UPDATE `users` SET ? WHERE id = ?', [editUser, req.user.id])
+        await getConn().query('UPDATE `users` SET ? WHERE id = ?;', [editUser, req.user.id])
 
         // Actualizamos la foto de perfil en caso de que nos la manden
         if (req.files && req.files.image) {

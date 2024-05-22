@@ -5,12 +5,12 @@ const router = Router()
 
 router.get('/', getMiners)
 
-router.get('/:id', getMiner)
+router.get('/:idMiner', getMiner)
 
 router.post('/', createMiner)
 
-router.put('/', editMiner)
+router.put('/:idMiner', editMiner)
 
-router.delete('/', deleteMiner)
+router.delete('/:idMiner', deleteMiner)
 
 export default router

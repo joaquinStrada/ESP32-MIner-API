@@ -1,4 +1,4 @@
-import { schemaCreate } from '../joi/miner.joi'
+import { schemaCreate, schemaUpdate } from '../joi/miner.joi'
 import urlExist from '../utils/urlExist'
 import { getConn } from '../utils/database'
 import bcrypt from 'bcrypt'
@@ -27,7 +27,7 @@ export const getMiners = async (req, res) => {
 
 export const getMiner = async (req, res) => {
     try {
-        const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ req.params.id, req.user.id ])
+        const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ req.params.idMiner, req.user.id ])
 
         if (minerBD.length == 0) {
             return res.status(404).json({
@@ -74,9 +74,9 @@ export const createMiner = async (req, res) => {
 
     try {
         // Validamos que la pool url exista
-        const existUrl = await urlExist(poolUrl)
+        const poolExist = await urlExist(poolUrl)
         
-        if (!existUrl) {
+        if (!poolExist) {
             return res.status(400).json({
                 error: true,
                 message: 'La url de la pool no existe'
@@ -84,17 +84,17 @@ export const createMiner = async (req, res) => {
         }
 
         // Validamos que la serie ni el nombre del minero se repitan (En caso del nombre es por usuario)
-        const [ nameOrSerieValid ] = await getConn().query('SELECT `name`, `serie`, `user_id` FROM `miners` WHERE `name` = ? OR `serie` = ?;', [name, serie])
+        const [ nameOrSerieExist ] = await getConn().query('SELECT `name`, `serie`, `user_id` FROM `miners` WHERE `name` = ? OR `serie` = ?;', [name, serie])
 
-        const validName = nameOrSerieValid.filter(nameFound => nameFound.name === name && nameFound.user_id === req.user.id)
-        const validSerie = nameOrSerieValid.filter(serieFound => serieFound.serie === serie)
+        const existName = nameOrSerieExist.filter(nameFound => nameFound.name === name && nameFound.user_id === req.user.id)
+        const existSerie = nameOrSerieExist.filter(serieFound => serieFound.serie === serie)
 
-        if (validName.length > 0) {
+        if (existName.length > 0) {
             return res.status(400).json({
                 error: true,
                 message: 'Ya tienes un minero registrado con ese nombre'
             })
-        } else if (validSerie.length > 0) {
+        } else if (existSerie.length > 0) {
             return res.status(400).json({
                 error: true,
                 message: 'Ya existe un minero con esa serie'
@@ -133,7 +133,7 @@ export const createMiner = async (req, res) => {
         await getConn().query('INSERT INTO `mqtt_acl` SET ?', [newACL])
 
         // Devolvemos al usuario el nuevo minador
-        const [ minerBD ] = await getConn().query('SELECT `id`, `created_at`, `name`, `description`, `serie`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `conected` FROM `miners` WHERE `id` = ?;', [newMinerBD.insertId])
+        const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ?;', [newMinerBD.insertId])
 
         res.json({
             error: false,
@@ -148,8 +148,101 @@ export const createMiner = async (req, res) => {
     }
 }
 
-export const editMiner = (req, res) => {
-    res.json('oh yeah!!!')
+export const editMiner = async (req, res) => {
+    const { name, description,
+            serie, password, 
+            poolUrl, poolPort, walletAddress } = req.body
+
+    const { idMiner } = req.params
+    const { id: userId } = req.user
+
+    // Validamos los campos
+    const { error } = schemaUpdate.validate({
+        name,
+        description,
+        serie,
+        password,
+        poolUrl,
+        poolPort,
+        walletAddress
+    })
+
+    if (error) {
+        return res.status(400).json({
+            error: true,
+            message: error.details[0].message
+        })
+    }
+
+    try {
+        // Validamos que la pool url exista
+        const poolExist = await urlExist(poolUrl)
+
+        if (!poolExist) {
+            return res.status(400).json({
+                error: true,
+                message: 'La url de la pool no existe'
+            })
+        }
+
+        // Validamos que el minero exista y sea nuestro
+        const [ minerFound ] = await getConn().query('SELECT COUNT(*) FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [idMiner, userId])
+
+        if (minerFound[0]['COUNT(*)'] === 0) {
+            return res.status(404).json({
+                error: true,
+                message: 'Minero no encontrado'
+            })
+        }
+
+        // Validamos que el nombre (por usuario) mni la serie se repitan
+        const [ nameOrSerieExist ] = await getConn().query('SELECT `id`, `name`, `serie`, `user_id` FROM `miners` WHERE `name` = ? OR `serie` = ?;', [ name, serie ])
+        const nameExist = nameOrSerieExist.filter(nameFound => String(nameFound.name).toLowerCase() === String(name).toLowerCase() && nameFound.user_id === userId && nameFound.id !== idMiner)
+        const serieExist = nameOrSerieExist.filter(serieFound => String(serieFound.serie).toLowerCase() === String(serie).toLowerCase() && serieFound.id !== idMiner)
+
+        if (nameExist.length > 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'Ya tienes un minero con ese nombre'
+            })
+        } else if (serieExist.length > 0) {
+            return res.status(400).json({
+                error: true,
+                message: 'Ya existe un minero con esa serie'
+            })
+        }
+
+        // Actualizamos el minero
+        const editMiner = {
+            name,
+            description,
+            serie,
+            pool_url: poolUrl,
+            pool_port: poolPort,
+            wallet_address: walletAddress
+        }
+
+        if (password) {
+            const salt = await bcrypt.genSalt(10)
+            editMiner.password = await bcrypt.hash(password, salt)
+        }
+
+        await getConn().query('UPDATE `miners` SET ? WHERE id = ?;', [ editMiner, idMiner ])
+
+        // Devolvemos el minero actualizado
+        const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ?;', [ idMiner ])
+
+        res.json({
+            error: false,
+            data: minerParser(minerBD[0])
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
 }
 
 export const deleteMiner = (req, res) => {
