@@ -303,7 +303,7 @@ export const editUser = async (req, res) => {
         res.json({
             error: false,
             data: {
-                created_at: userFound[0].created_at,
+                createdAt: userFound[0].created_at,
                 fullname: userFound[0].fullname,
                 email: userFound[0].email,
                 user: userFound[0].user,
