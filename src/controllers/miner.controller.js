@@ -4,8 +4,35 @@ import { getConn } from '../utils/database'
 import bcrypt from 'bcrypt'
 import { v4 as uuid } from 'uuid'
 
-export const getMiners = (req, res) => {
-    res.json('oh yeah!!!')
+export const getMiners = async (req, res) => {
+    try {
+        const [ minersBD ] = await getConn().query('SELECT * FROM `miners` WHERE `user_id` = ?;', [req.user.id])
+
+        const data = minersBD.map(miner => ({
+            id: miner.id,
+            createdAt: miner.created_at,
+            name: miner.name,
+            description: miner.description,
+            serie: miner.serie,
+            baseTopic: miner.base_topic,
+            poolUrl: miner.pool_url,
+            poolPort: miner.pool_port,
+            walletAddress: miner.wallet_address,
+            conected: miner.conected
+        }))
+
+        res.json({
+            error: false,
+            count: data.length,
+            data
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
 }
 
 export const getMiner = (req, res) => {
