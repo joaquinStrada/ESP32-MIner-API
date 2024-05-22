@@ -3,23 +3,13 @@ import urlExist from '../utils/urlExist'
 import { getConn } from '../utils/database'
 import bcrypt from 'bcrypt'
 import { v4 as uuid } from 'uuid'
+import minerParser from '../utils/minerParser'
 
 export const getMiners = async (req, res) => {
     try {
         const [ minersBD ] = await getConn().query('SELECT * FROM `miners` WHERE `user_id` = ?;', [req.user.id])
 
-        const data = minersBD.map(miner => ({
-            id: miner.id,
-            createdAt: miner.created_at,
-            name: miner.name,
-            description: miner.description,
-            serie: miner.serie,
-            baseTopic: miner.base_topic,
-            poolUrl: miner.pool_url,
-            poolPort: miner.pool_port,
-            walletAddress: miner.wallet_address,
-            conected: miner.conected
-        }))
+        const data = minersBD.map(miner => minerParser(miner))
 
         res.json({
             error: false,
@@ -35,8 +25,28 @@ export const getMiners = async (req, res) => {
     }
 }
 
-export const getMiner = (req, res) => {
-    res.json('oh yeah!!!')
+export const getMiner = async (req, res) => {
+    try {
+        const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ req.params.id, req.user.id ])
+
+        if (minerBD.length == 0) {
+            return res.status(404).json({
+                error: true,
+                message: 'Minador no encontrado'
+            })
+        }
+
+        res.json({
+            error: false,
+            data: minerParser(minerBD[0])
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
 }
 
 export const createMiner = async (req, res) => {
@@ -127,18 +137,7 @@ export const createMiner = async (req, res) => {
 
         res.json({
             error: false,
-            data: {
-                id: minerBD[0].id,
-                createdAt: minerBD[0].created_at,
-                name: minerBD[0].name,
-                description: minerBD[0].description,
-                serie: minerBD[0].serie,
-                baseTopic: minerBD[0].base_topic,
-                poolUrl: minerBD[0].pool_url,
-                poolPort: minerBD[0].pool_port,
-                walletAddress: minerBD[0].wallet_address,
-                conected: minerBD[0].conected
-            }
+            data: minerParser(minerBD[0])
         })
     } catch (err) {
        console.error(err)

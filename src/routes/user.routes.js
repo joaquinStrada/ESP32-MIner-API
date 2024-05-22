@@ -9,7 +9,7 @@ router.post('/login', login)
 
 router.post('/register', fileUpload(), register)
 
-router.post('/refresh', refreshToken)
+router.get('/refresh', refreshToken)
 
 router.get('/', validateToken, getUser)
 
