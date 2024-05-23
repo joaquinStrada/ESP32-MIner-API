@@ -245,6 +245,38 @@ export const editMiner = async (req, res) => {
     }
 }
 
-export const deleteMiner = (req, res) => {
-    res.json('oh yeah!!!')
+export const deleteMiner = async (req, res) => {
+    const { idMiner } = req.params
+    const { id: userId } = req.user
+
+    try {
+        // Validamos si el minero existe y nos pertenece
+        const [ minerFound ] = await getConn().query('SELECT COUNT(*), `base_topic` FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ idMiner, userId ])
+
+        if (minerFound[0]['COUNT(*)'] === 0) {
+            return res.status(404).json({
+                error: true,
+                message: 'Minero no encontrado'
+            })
+        }
+
+        // Eliminamos el minero
+        const mqttTopic = `${minerFound[0].base_topic}/#`
+
+        await getConn().query('DELETE FROM `miners` WHERE `id` = ?;', [ idMiner ])
+        await getConn().query('DELETE FROM `mqtt_acl` WHERE `topic` = ?;', [ mqttTopic ])
+
+        // Respondemos al usuario
+        res.json({
+            error: false,
+            idMiner,
+            message: `Minero N° ${idMiner} eliminado satisfactoriamente`
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
 }
