@@ -19,3 +19,8 @@ export const schemaUpdate = Joi.object({
     poolPort: Joi.number().integer().min(1).max(65535).required(),
     walletAddress: Joi.string().min(6).max(255).required()
 })
+
+export const schemaLogin = Joi.object({
+    serie: Joi.string().min(1).max(5).required(),
+    password: Joi.string().min(8).max(20).required()
+})

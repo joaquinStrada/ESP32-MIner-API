@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: false }))
 
 // Routes
 app.use('/api/v1/user', userRoutes)
-app.use('/api/v1/miner', validateToken, minerRoutes)
+app.use('/api/v1/miner', minerRoutes)
 
 // Static routes
 app.use('/users/profiles/', validateToken, validateProfile, express.static(config.imageProfile.storeImages))

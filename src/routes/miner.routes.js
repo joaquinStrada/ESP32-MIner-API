@@ -1,16 +1,19 @@
 import { Router } from 'express'
-import { getMiners, getMiner, createMiner, editMiner, deleteMiner } from '../controllers/miner.controller';
+import validateToken from '../middelwares/validateToken.middelware'
+import { getMiners, getMiner, createMiner, editMiner, deleteMiner, loginMiner } from '../controllers/miner.controller';
 
 const router = Router()
 
-router.get('/', getMiners)
+router.get('/', validateToken, getMiners)
 
-router.get('/:idMiner', getMiner)
+router.get('/:idMiner', validateToken, getMiner)
 
-router.post('/', createMiner)
+router.post('/', validateToken, createMiner)
 
-router.put('/:idMiner', editMiner)
+router.put('/:idMiner', validateToken, editMiner)
 
-router.delete('/:idMiner', deleteMiner)
+router.delete('/:idMiner', validateToken, deleteMiner)
+
+router.post('/login', loginMiner)
 
 export default router

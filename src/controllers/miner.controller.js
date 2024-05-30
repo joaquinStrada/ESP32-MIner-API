@@ -1,4 +1,4 @@
-import { schemaCreate, schemaUpdate } from '../joi/miner.joi'
+import { schemaCreate, schemaLogin, schemaUpdate } from '../joi/miner.joi'
 import urlExist from '../utils/urlExist'
 import { getConn } from '../utils/database'
 import bcrypt from 'bcrypt'
@@ -271,6 +271,70 @@ export const deleteMiner = async (req, res) => {
             error: false,
             idMiner,
             message: `Minero N° ${idMiner} eliminado satisfactoriamente`
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
+}
+
+export const loginMiner = async (req, res) => {
+    const { serie, password } = req.body
+
+    // Validamos los campos
+    const { error } = schemaLogin.validate({
+        serie,
+        password
+    })
+
+    if (error) {
+        return res.status(400).json({
+            error: true,
+            message: error.details[0].message
+        })
+    }
+
+    try {
+        // Validamos que el minero exista con la serie que nos mandaron
+        const [ minerFound ] = await getConn().query('SELECT `id`, `serie`, `password`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `user_id` FROM `miners` WHERE `serie` = ?;', [ serie ])
+
+        if (minerFound.length === 0 || minerFound[0].serie !== serie) {
+            return res.status(400).json({
+                error: true,
+                message: 'Serie y/o password incorrectos'
+            })
+        }
+        
+        // Validamos el password
+        const validPass = await bcrypt.compare(password, minerFound[0].password)
+
+        if (!validPass) {
+            return res.status(400).json({
+                error: true,
+                message: 'Serie y/o password incorrectos'
+            })
+        }
+
+
+        // Actualizamos el minero con la fechayhora de ultima conexion
+        await getConn().query('UPDATE `miners` SET `conected` = ? WHERE `id` = ?;', [ new Date(), minerFound[0].id ])
+
+        // Devolvemos los datos del minero
+        const [ mqttFound ] = await getConn().query('SELECT `mqtt_user`.`username`, `mqtt_user`.`password_hash` FROM `mqtt_user`,`users` WHERE `mqtt_user`.`id` = `users`.`id_user_mqtt` AND `users`.`id` = ?;', [ minerFound[0].user_id ])
+
+        res.json({
+            error: false,
+            data: {
+                poolUrl: minerFound[0].pool_url,
+                poolPort: minerFound[0].pool_port,
+                walletAddress: minerFound[0].wallet_address,
+                mqttUser: mqttFound[0].username,
+                mqttPassword: mqttFound[0].password_hash,
+                mqttTopic: minerFound[0].base_topic
+            }
         })
     } catch (err) {
         console.error(err)
