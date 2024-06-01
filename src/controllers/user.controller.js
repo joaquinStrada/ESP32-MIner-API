@@ -216,7 +216,7 @@ export const getUser = async (req, res) => {
         res.json({
             error: false,
             data: {
-                created_at,
+                createdAt: created_at,
                 fullname,
                 email,
                 user,

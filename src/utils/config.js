@@ -4,6 +4,8 @@ dotenv()
 
 export const config = {
     api: {
+        https: process.env.IS_HTTPS || false,
+        host: process.env.HOST || 'localhost',
         port: process.env.PORT || 3000
     },
     database: {

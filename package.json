@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "esp32-miner-api",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Esta es una api para gestionar mineros de ESP32",
   "dependencies": {
     "@babel/polyfill": "^7.12.1",
     "axios": "^1.7.2",
@@ -25,6 +25,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "mysql2": "^3.9.7",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
