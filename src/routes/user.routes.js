@@ -63,7 +63,7 @@ const router = Router()
  *                 message:
  *                     type: String
  *                     description: Mensaje de error
- *                     example: \"user\" length must be at least 6 characters long
+ *                     example: "\"user\" length must be at least 6 characters long"
  *             required:
  *                 - error
  *                 - message
@@ -332,7 +332,7 @@ router.get('/refresh', refreshToken)
 
 /**
  * @swagger
- * /api/v1/user/:
+ * /api/v1/user:
  *     get:
  *      summary: Obtener usuario
  *      tags: [Users]
@@ -362,7 +362,7 @@ router.get('/', validateToken, getUser)
 
 /**
  * @swagger
- * /api/v1/user/:
+ * /api/v1/user:
  *     put:
  *      summary: Actualizar usuario
  *      tags: [Users]

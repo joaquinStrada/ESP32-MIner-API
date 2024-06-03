@@ -302,7 +302,7 @@ export const loginMiner = async (req, res) => {
         const [ minerFound ] = await getConn().query('SELECT `id`, `serie`, `password`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `user_id` FROM `miners` WHERE `serie` = ?;', [ serie ])
 
         if (minerFound.length === 0 || minerFound[0].serie !== serie) {
-            return res.status(400).json({
+            return res.status(401).json({
                 error: true,
                 message: 'Serie y/o password incorrectos'
             })
@@ -312,7 +312,7 @@ export const loginMiner = async (req, res) => {
         const validPass = await bcrypt.compare(password, minerFound[0].password)
 
         if (!validPass) {
-            return res.status(400).json({
+            return res.status(401).json({
                 error: true,
                 message: 'Serie y/o password incorrectos'
             })
