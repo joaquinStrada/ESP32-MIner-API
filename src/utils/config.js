@@ -6,7 +6,11 @@ export const config = {
     api: {
         https: process.env.IS_HTTPS || false,
         host: process.env.HOST || 'localhost',
-        port: process.env.PORT || 3000
+        port: process.env.PORT || 3000,
+        cors: {
+            origin: process.env.HOST_APP || '',
+            optionsSuccessStatus: 200
+        }
     },
     database: {
         host: process.env.MYSQL_HOST || 'localhost',

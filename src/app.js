@@ -1,6 +1,7 @@
 import { config } from './utils/config'
 import express from 'express'
 import morgan from 'morgan'
+import cors from 'cors'
 import swagger from './utils/swagger'
 
 // Importing Routes
@@ -16,6 +17,7 @@ app.set('port', config.api.port)
 app.use(morgan('dev'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
+app.use(cors(config.api.cors))
 
 // Routes
 app.use('/api/v1/user', userRoutes)
