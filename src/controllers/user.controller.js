@@ -161,7 +161,7 @@ export const refreshToken = async (req, res) => {
         // Validamos que el token este en la lista blanca y habilitado
         const [ tokenFound ] = await getConn().query('SELECT * FROM `whiteList` WHERE `refresh_token` = ?;', [token])
 
-        if (tokenFound.length === 0) {
+        if (tokenFound.length === 0 || tokenFound[0].refresh_token !== token) {
             throw new Error('Token no registrado')
         } else if (tokenFound[0].enabled !== 1) {
             throw new Error('Token deshabilitado')
