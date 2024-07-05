@@ -366,7 +366,7 @@ router.put('/:idMiner', validateToken, editMiner)
  *                              error:
  *                                  type: Boolean
  *                                  description: Indica si hubo error
- *                                  example: true
+ *                                  example: false
  *                              idMiner:
  *                                  type: Integer
  *                                  description: Id del minero eliminado
