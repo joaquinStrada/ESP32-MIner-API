@@ -197,8 +197,8 @@ export const editMiner = async (req, res) => {
 
         // Validamos que el nombre (por usuario) mni la serie se repitan
         const [ nameOrSerieExist ] = await getConn().query('SELECT `id`, `name`, `serie`, `user_id` FROM `miners` WHERE `name` = ? OR `serie` = ?;', [ name, serie ])
-        const nameExist = nameOrSerieExist.filter(nameFound => String(nameFound.name).toLowerCase() === String(name).toLowerCase() && nameFound.user_id === userId && nameFound.id !== idMiner)
-        const serieExist = nameOrSerieExist.filter(serieFound => String(serieFound.serie).toLowerCase() === String(serie).toLowerCase() && serieFound.id !== idMiner)
+        const nameExist = nameOrSerieExist.filter(nameFound => String(nameFound.name).toLowerCase() === String(name).toLowerCase() && nameFound.user_id == userId && nameFound.id != idMiner)
+        const serieExist = nameOrSerieExist.filter(serieFound => String(serieFound.serie).toLowerCase() === String(serie).toLowerCase() && serieFound.id != idMiner)
 
         if (nameExist.length > 0) {
             return res.status(400).json({
