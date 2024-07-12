@@ -1,5 +1,5 @@
 import { schemaCreate, schemaLogin, schemaUpdate } from '../joi/miner.joi'
-import urlExist from '../utils/urlExist'
+import { urlExist, getHostname } from '../utils/url'
 import { getConn } from '../utils/database'
 import bcrypt from 'bcrypt'
 import { v4 as uuid } from 'uuid'
@@ -112,7 +112,7 @@ export const createMiner = async (req, res) => {
             serie,
             password: passHash,
             base_topic: uuid(),
-            pool_url: poolUrl,
+            pool_url: getHostname(poolUrl),
             pool_port: poolPort,
             wallet_address: walletAddress,
             user_id: req.user.id
@@ -217,7 +217,7 @@ export const editMiner = async (req, res) => {
             name,
             description,
             serie,
-            pool_url: poolUrl,
+            pool_url: getHostname(poolUrl),
             pool_port: poolPort,
             wallet_address: walletAddress
         }

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import URL from 'url'
 
-const urlExist = url => new Promise(resolve => {
+export const urlExist = url => new Promise(resolve => {
     const urlObject = URL.parse(url)
     const getURL = `https://${urlObject.hostname || urlObject.host || urlObject.href}`
     
@@ -20,4 +20,5 @@ const urlExist = url => new Promise(resolve => {
         })
 })
 
-export default urlExist
+
+export const getHostname = url => URL.parse(url).hostname
