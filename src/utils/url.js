@@ -21,4 +21,4 @@ export const urlExist = url => new Promise(resolve => {
 })
 
 
-export const getHostname = url => URL.parse(url).hostname
+export const getHostname = url => URL.parse(url).hostname || URL.parse(url).host || URL.parse(url).href
