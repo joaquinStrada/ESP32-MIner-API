@@ -299,7 +299,7 @@ export const loginMiner = async (req, res) => {
 
     try {
         // Validamos que el minero exista con la serie que nos mandaron
-        const [ minerFound ] = await getConn().query('SELECT `id`, `serie`, `password`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `user_id` FROM `miners` WHERE `serie` = ?;', [ serie ])
+        const [ minerFound ] = await getConn().query('SELECT `id`, `name`, `serie`, `password`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `user_id` FROM `miners` WHERE `serie` = ?;', [ serie ])
 
         if (minerFound.length === 0 || minerFound[0].serie !== serie) {
             return res.status(401).json({
@@ -328,6 +328,7 @@ export const loginMiner = async (req, res) => {
         res.json({
             error: false,
             data: {
+                name: minerFound[0].name,
                 poolUrl: minerFound[0].pool_url,
                 poolPort: minerFound[0].pool_port,
                 walletAddress: minerFound[0].wallet_address,
