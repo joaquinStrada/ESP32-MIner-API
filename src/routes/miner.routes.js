@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import validateToken from '../middelwares/validateToken.middelware'
-import { getMiners, getMiner, createMiner, editMiner, deleteMiner, loginMiner } from '../controllers/miner.controller';
+import { getMiners, getMiner, createMiner, editMiner, deleteMiner, loginMiner, getDataMiner } from '../controllers/miner.controller';
 
 const router = Router()
 
@@ -536,5 +536,99 @@ router.delete('/:idMiner', validateToken, deleteMiner)
  *                          $ref: '#/components/schemas/ServerError'
  */
 router.post('/login', loginMiner)
+
+/**
+ * @swagger
+ * /api/v1/miner/{idMiner}/data:
+ *   get:
+ *     summary: Datos que almaceno del minero
+ *     tags: [Miners]
+ *     parameters:
+ *       - $ref: '#/components/parameters/IdMiner'
+ *       - $ref: '#/components/parameters/AccessToken'
+ *     responses:
+ *       200:
+ *         description: Datos que almaceno el minero
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               description: Datos que almaceno del minero
+ *               properties:
+ *                 error:
+ *                   type: Boolean
+ *                   description: Indica si hubo un error o no
+ *                   example: false
+ *                 data:
+ *                   type: array
+ *                   description: Datos que almaceno el minero
+ *                   items:
+ *                     type: object
+ *                     description: Dato que almaceno el minero
+ *                     properties:
+ *                       datetime:
+ *                         type: integer
+ *                         description: La fecha en tiempo unix (milisegundos) en el que se almaceno el dato
+ *                         example: 1752262434000
+ *                       validShares:
+ *                         type: integer
+ *                         description: La cantidad de hashes validos generandos por el minero
+ *                         example: 0
+ *                       invalidShares:
+ *                         type: integer
+ *                         description: La cantidad de hashes invalidos generandos por el minero
+ *                         example: 112487486
+ *                       memory:
+ *                         type: number
+ *                         description: La cantidad de memoria utilizada por el minero
+ *                         example: 29.94
+ *                       memoryPsram:
+ *                         type: number
+ *                         description: La cantidad de memoria psram utilizada por el minero
+ *                         example: 0
+ *                       disk:
+ *                         type: number
+ *                         description: La cantidad de disco utilizado por el minero
+ *                         example: 0
+ *                       red:
+ *                         type: number
+ *                         description: El porcentaje de señal wifi que recibe el minero
+ *                         example: 44
+ *                       hashrate:
+ *                         type: integer
+ *                         description: La cantidad de hashes por segundo que esta produciendo el minero
+ *                         example: 12018
+ *                     required:
+ *                       - datetime
+ *                       - validShares
+ *                       - invalidShares
+ *                       - memory
+ *                       - memoryPsram
+ *                       - disk
+ *                       - red
+ *                       - hashrate
+ *               required:
+ *                 - error
+ *                 - data
+ *       401:
+ *         description: Acceso denegado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AccessDenied'
+ *       404:
+ *         description: Minero no encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MinerNotFound'
+ *       500:
+ *         description: Error del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ServerError'
+ */
+router.get('/:idMiner/data', validateToken, getDataMiner)
 
 export default router

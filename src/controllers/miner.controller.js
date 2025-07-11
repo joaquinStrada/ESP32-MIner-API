@@ -29,10 +29,10 @@ export const getMiner = async (req, res) => {
     try {
         const [ minerBD ] = await getConn().query('SELECT * FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ req.params.idMiner, req.user.id ])
 
-        if (minerBD.length == 0) {
+        if (minerBD.length !== 1) {
             return res.status(404).json({
                 error: true,
-                message: 'Minador no encontrado'
+                message: 'Minero no encontrado'
             })
         }
 
@@ -188,7 +188,7 @@ export const editMiner = async (req, res) => {
         // Validamos que el minero exista y sea nuestro
         const [ minerFound ] = await getConn().query('SELECT COUNT(*) FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [idMiner, userId])
 
-        if (minerFound[0]['COUNT(*)'] === 0) {
+        if (minerFound[0]['COUNT(*)'] !== 1) {
             return res.status(404).json({
                 error: true,
                 message: 'Minero no encontrado'
@@ -253,7 +253,7 @@ export const deleteMiner = async (req, res) => {
         // Validamos si el minero existe y nos pertenece
         const [ minerFound ] = await getConn().query('SELECT COUNT(*), `base_topic` FROM `miners` WHERE `id` = ? AND `user_id` = ?;', [ idMiner, userId ])
 
-        if (minerFound[0]['COUNT(*)'] === 0) {
+        if (minerFound[0]['COUNT(*)'] !== 1) {
             return res.status(404).json({
                 error: true,
                 message: 'Minero no encontrado'
@@ -301,7 +301,7 @@ export const loginMiner = async (req, res) => {
         // Validamos que el minero exista con la serie que nos mandaron
         const [ minerFound ] = await getConn().query('SELECT `id`, `name`, `serie`, `password`, `base_topic`, `pool_url`, `pool_port`, `wallet_address`, `user_id` FROM `miners` WHERE `serie` = ?;', [ serie ])
 
-        if (minerFound.length === 0 || minerFound[0].serie !== serie) {
+        if (minerFound.length !== 0 || minerFound[0].serie !== serie) {
             return res.status(401).json({
                 error: true,
                 message: 'Serie y/o password incorrectos'
@@ -336,6 +336,50 @@ export const loginMiner = async (req, res) => {
                 mqttPassword: mqttFound[0].password_hash,
                 mqttTopic: minerFound[0].base_topic
             }
+        })
+    } catch (err) {
+        console.error(err)
+        res.status(500).json({
+            error: true,
+            message: 'Ha ocurrido un error'
+        })
+    }
+}
+
+export const getDataMiner = async (req, res) => {
+    const { idMiner } = req.params
+    const { id: userId } = req.user
+
+    try {
+        // Validamos que el minero exista y sea nuestro
+        const [ minerBD ] = await getConn().query('SELECT COUNT(*), `serie` FROM `miners` WHERE `id` = ? AND `user_id` = ?', [idMiner, userId])
+        
+        if (minerBD[0]['COUNT(*)'] !== 1) {
+            return res.status(404).json({
+                error: true,
+                message: 'Minero no encontrado'
+            })
+        }
+        
+        // Obtenemos todos los datos del minero
+        const [ dataBD ] = await getConn().query('SELECT UNIX_TIMESTAMP(`datetime`), `serie`, `valid_shares`, `invalid_shares`, `memory`, `memory_psram`, `disk`, `red`, `hashrate` FROM `data` WHERE `serie` = ?', [minerBD[0].serie])
+
+        const data = dataBD
+            .filter(data => data.serie === minerBD[0].serie)
+            .map(data => ({
+                datetime: data['UNIX_TIMESTAMP(`datetime`)'] * 1000,
+                validShares: data.valid_shares,
+                invalidShares: data.invalid_shares,
+                memory: data.memory,
+                memoryPsram: data.memory_psram,
+                disk: data.disk,
+                red: data.red,
+                hashrate: data.hashrate
+            }))
+
+        res.json({
+            error: false,
+            data
         })
     } catch (err) {
         console.error(err)
