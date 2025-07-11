@@ -8,8 +8,10 @@ export const createConnection = async () => {
         conn = await mysql.createConnection(config.database)
 
         console.log('DB is connected to', config.database.host)
+        return true
     } catch (err) {
         console.error(err)
+        return false
     }
 }
 

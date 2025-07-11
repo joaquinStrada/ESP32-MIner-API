@@ -26,5 +26,18 @@ export const config = {
     jwt: {
         accessToken: process.env.JWT_ACCESS_TOKEN || '',
         refreshToken: process.env.JWT_REFRESH_TOKEN || ''
+    },
+    mqtt: {
+        url: `mqtt://${process.env.MQTT_HOST || 'localhost'}`,
+        options: {
+            host: process.env.MQTT_HOST || 'localhost',
+            port: process.env.MQTT_PORT || 1883,
+            username: process.env.MQTT_USER || '',
+            password: process.env.MQTT_PASSWORD || '',
+            clientId: process.env.MQTT_CLIENT_ID || 'MQTT_Node',
+            keepalive: 60 
+        },
+        baseTopic: process.env.MQTT_BASE_TOPIC || '+/#',
+        intervalTime: process.env.MQTT_INTERVAL_TIME || 1000
     }
 }
